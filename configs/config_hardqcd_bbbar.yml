@@ -11,6 +11,7 @@ simulation:
   pythia:
     enable: true
     config: pythia_cfg/pythia_hardqcd_bbbar.cfg
+    config_pileup: pythia_cfg/pythia_softqcd.cfg
     pileup: 1
   gun:
     enable: false

@@ -1,98 +1,27 @@
 #!/usr/bin/env python3
+ 
 import sys
 from pathlib import Path
-import argparse
 
-from acts.examples import (
-    TGeoDetector,
-    WhiteBoard,
-    AlgorithmContext,
-    ProcessCode,
-    CsvTrackingGeometryWriter,
-    ObjTrackingGeometryWriter,
-    JsonSurfacesWriter,
-    JsonMaterialWriter,
-    JsonFormat,
-    Interval,
-)
+from acts.examples.tgeo import TGeoDetector, Interval
 
 import acts
+import acts.examples
+from acts import UnitConstants as u
 
-from acts import MaterialMapJsonConverter, UnitConstants as u
 
+# To automatically unzip stuff
+from zipfile import ZipFile
 
-def runALICE3(
-    trackingGeometry,
-    decorators,
-    outputDir: Path,
-    events=1,
-    outputObj=True,
-    outputCsv=False,
-    outputJson=False,
-):
-
-    for ievt in range(events):
-        eventStore = WhiteBoard(
-            name=f"EventStore#{ievt}", level=acts.logging.INFO)
-        ialg = 0
-
-        context = AlgorithmContext(ialg, ievt, eventStore)
-
-        for cdr in decorators:
-            r = cdr.decorate(context)
-            if r != ProcessCode.SUCCESS:
-                raise RuntimeError("Failed to decorate event context")
-
-        if outputCsv:
-            csv_dir = outputDir / "csv"
-            csv_dir.mkdir(exist_ok=True)
-            writer = CsvTrackingGeometryWriter(
-                level=acts.logging.INFO,
-                trackingGeometry=trackingGeometry,
-                outputDir=str(csv_dir),
-                writePerEvent=True,
-            )
-            writer.write(context)
-
-        if outputObj:
-            obj_dir = outputDir / "obj"
-            obj_dir.mkdir(exist_ok=True)
-            writer = ObjTrackingGeometryWriter(
-                level=acts.logging.INFO,
-                outputDir=str(obj_dir),
-            )
-            writer.write(context, trackingGeometry)
-
-        if outputJson:
-            json_dir = outputDir / "json"
-            json_dir.mkdir(exist_ok=True)
-            writer = JsonSurfacesWriter(
-                level=acts.logging.INFO,
-                trackingGeometry=trackingGeometry,
-                outputDir=str(json_dir),
-                writePerEvent=True,
-                writeSensitive=True,
-            )
-            writer.write(context)
-
-            jmConverterCfg = MaterialMapJsonConverter.Config(
-                processSensitives=True,
-                processApproaches=True,
-                processRepresenting=True,
-                processBoundaries=True,
-                processVolumes=True,
-                processNonMaterial=True,
-                context=context.geoContext,
-            )
-
-            jmw = JsonMaterialWriter(
-                level=acts.logging.VERBOSE,
-                converterCfg=jmConverterCfg,
-                fileName=str(json_dir / "geometry-map"),
-                writeFormat=JsonFormat.Json,
-            )
-
-            jmw.write(trackingGeometry)
+# Move it to an utility tool
+def unzipFile(zipfile : Path):
+    if zipfile.exists():
+        # unzip
+        with ZipFile(zipfile, 'r') as zip_ref:
+            zip_ref.extractall(zipfile.parent)
+            print(f"Extracted {zipfile}...")
+    else:
+        raise FileNotFoundError(f"{zipfile} doesn't exist!")
 
 
 def buildALICE3Geometry(
@@ -103,14 +32,14 @@ def buildALICE3Geometry(
     matDeco = None
 ):
 
-    logger = acts.logging.getLogger("buildALICE3Geometry")
-
-#    matDeco = None
-#    matDeco = acts.IMaterialDecorator.fromFile("geometry-map.json")
     if material:
-#        file = geo_dir / "material-maps.root"
         file = geo_dir / "material-map.json"
-        logger.info("Adding material from %s", file.absolute())
+        zip_file = geo_dir / "material-map.json.zip"
+
+        # check if JSON exists, if not assume that the zipfile exists and unpack it
+        if not file.exists():
+            unzipFile(zip_file)
+            
         matDeco = acts.IMaterialDecorator.fromFile(
             file,
             level=acts.logging.Level(
@@ -121,7 +50,6 @@ def buildALICE3Geometry(
 
     if jsonconfig:
         jsonFile = geo_dir / "tgeo-config.json"
-        logger.info("Create geometry from %s", jsonFile.absolute())
         # return TGeoDetector.create(
         return TGeoDetector(
             jsonFile=str(jsonFile),
@@ -143,7 +71,7 @@ def buildALICE3Geometry(
         materialDecorator=matDeco,
         buildBeamPipe=True,
         unitScalor=10.0,  # explicit units
-#        beamPipeRadius=3.7 * u.mm,
+    #    beamPipeRadius=2.7 * u.mm,
         beamPipeRadius=4.8 * u.mm,
         beamPipeHalflengthZ=1000.0 * u.mm,  #500.0 * u.mm,
         beamPipeLayerThickness=0.25 * u.mm, #0.25 * u.mm,
@@ -160,20 +88,20 @@ def buildALICE3Geometry(
                 binTolerancePhi=(0.25 * u.mm, 0.25 * u.mm),
                 layers=LayerTriplet(True),
                 subVolumeName=LayerTriplet(
-                    negative="FT3*", central="TRK*", positive="FT3*"),
+                    negative="*TRK*", central="*TRK*", positive="*TRK*"),
                 sensitiveNames=LayerTriplet(
-                    negative=["FT3Sensor*"], central=["TRKSensor*"], positive=["FT3Sensor*"]),
+                    negative=["*TRKSensor*"], central=["*TRKSensor*"], positive=["*TRKSensor*"]),
                 sensitiveAxes=LayerTriplet("XYZ"),
 #                rRange=LayerTriplet((5.1 * u.mm, 45 * u.mm)),
 #                rRange=LayerTriplet((5.1 * u.mm, 35.5 * u.mm)),
                 rRange=LayerTriplet(negative=(5 * u.mm, 45 * u.mm),
-                                    central=(5.1 * u.mm, 36 * u.mm),
+                                    central=(2.5 * u.mm, 36 * u.mm),
                                     positive=(5 * u.mm, 45 * u.mm)),
 
                 zRange=LayerTriplet(
-                    negative=(-400 * u.mm, -250 * u.mm),
-                    central=(-250 * u.mm, 250 * u.mm),
-                    positive=(250 * u.mm, 400 * u.mm),
+                    negative=(-400 * u.mm, -252 * u.mm),
+                    central=(-252 * u.mm, 252 * u.mm),
+                    positive=(252 * u.mm, 400 * u.mm),
                 ),
                 splitTolR=LayerTriplet(
                     negative=-1.0, central=3 * u.mm, positive=-1.0),
@@ -209,8 +137,9 @@ def buildALICE3Geometry(
                 subVolumeName=LayerTriplet(
                     negative="FT3*", central="*TRK*", positive="FT3*"),
                 sensitiveNames=LayerTriplet(
-                    negative=["FT3Sensor*"], central=["*TRKSensor*"], positive=["FT3Sensor*"]),
-                sensitiveAxes=LayerTriplet("XYZ"),
+                    negative=["FT3Sensor*"], central=["*TRKSensor*","*ITOFSensor*"], positive=["FT3Sensor*"]),
+                sensitiveAxes=LayerTriplet(
+                    negative="XYZ", central="XYZ", positive="XYZ"),
                 rRange=LayerTriplet(negative=(50 * u.mm, 500 * u.mm),
                                     central=(50 * u.mm, 440 * u.mm),
                                     positive=(50 * u.mm, 500 * u.mm)),
@@ -220,7 +149,7 @@ def buildALICE3Geometry(
                     positive=(700 * u.mm, 1300 * u.mm),
                 ),
                 splitTolR=LayerTriplet(
-                    negative=-1.0, central=1 * u.mm, positive=-1.0),
+                    negative=-1.0, central=2 * u.mm, positive=-1.0),
                 splitTolZ=LayerTriplet(
                     negative=5 * u.mm, central=-1.0, positive=5 * u.mm
                 ),
@@ -235,8 +164,8 @@ def buildALICE3Geometry(
                     positive=[(0, equidistant)],
                 ),
                 cylinderDiscSplit=False,
-                cylinderNZSegments=6,
-                cylinderNPhiSegments=32,
+                cylinderNZSegments=0, #6,
+                cylinderNPhiSegments=0, #32,
                 discNRSegments=6,
                 discNPhiSegments=32,
                 itkModuleSplit=False,
@@ -252,7 +181,8 @@ def buildALICE3Geometry(
                     positive=False, central=True, negative=False),
                 subVolumeName=LayerTriplet("TRK*"),
                 sensitiveNames=LayerTriplet(["TRKSensor*"]),
-                sensitiveAxes=LayerTriplet("XYZ"),
+                                sensitiveAxes=LayerTriplet(
+                    negative="XYZ", central="XYZ", positive="XYZ"),
                 rRange=LayerTriplet(
                     central=(445 * u.mm, 1500 * u.mm),
                 ),
@@ -292,13 +222,14 @@ def buildALICE3Geometry(
                 subVolumeName=LayerTriplet("FT3*"),
                 sensitiveNames=LayerTriplet(["FT3Sensor*"]),
                 sensitiveAxes=LayerTriplet("XYZ"),
+                # sensitiveAxes=LayerTriplet("YZX"),
                 rRange=LayerTriplet(
                     negative=(50 * u.mm, 1500 * u.mm),
                     positive=(50 * u.mm, 1500 * u.mm),
                 ),
                 zRange=LayerTriplet(
-                    negative=(-4200 * u.mm, -1350 * u.mm),
-                    positive=(1350 * u.mm, 4200 * u.mm),
+                    negative=(-3600 * u.mm, -1350 * u.mm),
+                    positive=(1350 * u.mm, 3600 * u.mm),
                 ),
                 splitTolR=LayerTriplet(-1.0),
                 splitTolZ=LayerTriplet(negative=5 * u.mm, positive=5 * u.mm),
@@ -334,10 +265,10 @@ def buildALICE3Geometry(
                 sensitiveNames=LayerTriplet(["OTOFSensor*"]),
                 sensitiveAxes=LayerTriplet("XYZ"),
                 rRange=LayerTriplet(
-                    central=(845 * u.mm, 1205 * u.mm),
+                    central=(900 * u.mm, 1400 * u.mm),
                 ),
                 zRange=LayerTriplet(
-                    central=(-3400 * u.mm, 3400 * u.mm),
+                    central=(-3410 * u.mm, 3410 * u.mm),
                 ),
                 splitTolR=LayerTriplet(
                     central=1 * u.mm,
@@ -411,61 +342,4 @@ def buildALICE3Geometry(
             ),
 
         ],
-    )
-
-
-if "__main__" == __name__:
-    p = argparse.ArgumentParser(
-        description="Example script to construct the ALICE3 geometry and write it out to CSV and OBJ formats"
-    )
-    p.add_argument(
-        "geo_dir",
-        help="Input directory containing the ALICE3 standalone geometry.",
-    )
-    p.add_argument(
-        "--output-dir",
-        default=Path.cwd(),
-        type=Path,
-        help="Directory to write outputs to",
-    )
-    p.add_argument(
-        "--output-csv", action="store_true", help="Write geometry in CSV format."
-    )
-    p.add_argument(
-        "--output-obj", action="store_true", help="Write geometry in OBJ format."
-    )
-    p.add_argument(
-        "--output-json",
-        action="store_true",
-        help="Write geometry and material in JSON format.",
-    )
-    p.add_argument(
-        "--no-material", action="store_true", help="Decorate material to the geometry"
-    )
-
-    args = p.parse_args()
-    args.output_dir.mkdir(exist_ok=True, parents=True)
-
-    geo_example_dir = Path(args.geo_dir)
-    assert geo_example_dir.exists(), "Detector example input directory missing"
-    
-    # detector, trackingGeometry, decorators = buildALICE3Geometry(
-    detector = buildALICE3Geometry(
-        geo_example_dir,
-        material=not args.no_material,
-    )
-    trackingGeometry = detector.trackingGeometry()
-    decorators = detector.contextDecorators()
-
-    # changed on May 5 (moving to v41.0.0), 
-    # reason: https://github.com/acts-project/acts/commit/5c7de7aaccc29b026ddf17c3a0d9fe43572bbf4a
-    # https://github.com/acts-project/acts/commit/341d2b0b64cd4ccfc26cb69dea2006a875e5eab5
-
-    runALICE3(
-        trackingGeometry=trackingGeometry,
-        decorators=decorators,
-        outputDir=args.output_dir,
-        outputCsv=args.output_csv,
-        outputObj=args.output_obj,
-        outputJson=args.output_json,
     )

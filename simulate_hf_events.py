@@ -18,6 +18,8 @@ from acts.examples.reconstruction import (
     addAmbiguityResolution,
     AmbiguityResolutionConfig,
     CkfConfig,
+    addVertexFitting,
+    VertexFinder
 )
 from acts.examples.simulation import (
     addParticleGun,
@@ -122,6 +124,7 @@ def run_simulation(config_file):
 
     if cfg["simulation"]["pythia"]["enable"]:
         pythia_cfg = parse_pythia_cfg(cfg["simulation"]["pythia"]["config"])
+        pythia_cfg_pu = parse_pythia_cfg(cfg["simulation"]["pythia"]["config_pileup"])
 
         sequencer = addPythia8(
             sequencer,
@@ -129,6 +132,7 @@ def run_simulation(config_file):
             beam=pythia_cfg[0],
             cmsEnergy=pythia_cfg[1] * acts.UnitConstants.TeV,
             hardProcess=pythia_cfg[2],
+            pileupProcess=pythia_cfg_pu[2],
             vtxGen=acts.examples.GaussianVertexGenerator(
                 stddev=acts.Vector4(
                     cfg["simulation"]["diamond"][0] * UNITS.mm,
@@ -140,7 +144,8 @@ def run_simulation(config_file):
             ),
             rnd=rnd,
             logLevel=acts.logging.INFO,
-            outputDirRoot=cfg["simulation"]["outputdir"]
+            outputDirRoot=cfg["simulation"]["outputdir"],
+            writeHepMC3=pathlib.Path(os.path.join(cfg["simulation"]["outputdir"], "events.hepmc3"))
         )
     if cfg["simulation"]["gun"]["enable"]:
         # list of available particles: https://github.com/acts-project/acts/blob/main/Core/include/Acts/Definitions/PdgParticle.hpp#L21
@@ -265,8 +270,8 @@ def run_simulation(config_file):
         print(f"ERROR: seeding layers option {seeding_layers_opt} not supported. Exit")
         sys.exit()
 
-    seeding_alg = SeedingAlgorithm.Default
-    if cfg["reconstruction"]["seeding"]["algorithm"] not in ["Default", "GridTriplet"]:
+    seeding_alg = SeedingAlgorithm.TruthSmeared
+    if cfg["reconstruction"]["seeding"]["algorithm"] not in ["TruthSmeared", "GridTriplet"]:
         print(f"ERROR: seeding algorithm {cfg['reconstruction']['seeding']['algorithm']} not supported. Exit")
         sys.exit()
     elif cfg["reconstruction"]["seeding"]["algorithm"] == "GridTriplet":
@@ -274,6 +279,7 @@ def run_simulation(config_file):
 
     collision_region_4seeds = (cfg["reconstruction"]["seeding"]["collision_region"]) # mm; large values - for V0 daughter reconstruction
 
+    # seeding
     sequencer = addSeeding(
         sequencer,
         tracking_geom,
@@ -340,6 +346,7 @@ def run_simulation(config_file):
         #    initialVarInflation = (0.2,0.2,0.2,0.2,0.2,0.2)  #IA
     )
 
+    #tracking
     # useful info: https://github.com/acts-project/acts/blob/main/Core/include/Acts/TrackFinding/MeasurementSelector.hpp
     sequencer = addCKFTracks(
         sequencer,
@@ -371,6 +378,16 @@ def run_simulation(config_file):
         ),
         outputDirRoot=cfg["reconstruction"]["outputdir"],
         logLevel=acts.logging.INFO,
+    )
+
+    # vertexing
+    sequencer = addVertexFitting(
+        sequencer,
+        field,
+        vertexFinder=VertexFinder.AMVF,
+        outputDirRoot=cfg["reconstruction"]["outputdir"],
+        seeder=acts.examples.VertexSeedFinder.AdaptiveGridSeeder,
+        useTime=False,  # True,
     )
 
     sequencer.run()
