@@ -6,15 +6,20 @@ Repository for HF performance studies with ACTS for ALICE3
 ```bash
 mkdir -p alice
 cd alice
+git clone https://github.com/AliceO2Group/acts.git
+mv acts ACTS
+cd ACTS
+git checkout v46.2.0-alice
+cd ..
 aliBuild init O2@dev
-aliBuild init ACTSO2,HepMC3
+aliBuild init ACTSO2  ### -> this provides you a collection of scripts and geometries which can be useful in several analyses
+aliBuild init HepMC3
 ```
-* At this point, if you have the error: `ERROR: Error during git clone for reference repo for ACTSO2`, make sure to have an updated gitLab SSH key, or replace line 16 of `~/alice/alidist/actso2.sh` with: `source: https://gitlab.cern.ch/alice3-trackers/wp1-simulationsandperformances/actso2.git`. This will prompt you a request to insert your GitLab username and password.
-* If instead you have problems with the init of HepMC3, just run `git clone https://gitlab.cern.ch/hepmc/HepMC3.git` and do not run the init for HepMC3.
+* At this point if you have problems with the init of HepMC3, just run `git clone https://gitlab.cern.ch/hepmc/HepMC3.git` instead of running the init for HepMC3.
 
-2. Compile O2 with ACTS dependencies
+2. Compile O2 with ACTS dependencies --> this allows you to have all the tools to run also ACTS algorithms on O2 outputs
 ```bash
-aliBuild build O2 --defaults o2-acts
+aliBuild build O2 --defaults o2-acts --debug
 ```
 3. Compile ACTSO2
 ```bash
@@ -23,7 +28,7 @@ aliBuild build ACTSO2
 
 # enter the environment
 ```bash
-alienv enter O2/latest ACTSO2/latest
+alienv enter O2/latest ACTS/latest
 ```
 
 # setup python bindings
