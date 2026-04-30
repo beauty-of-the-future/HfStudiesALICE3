@@ -368,7 +368,7 @@ def run_simulation(config_file):
         ),
         twoWay=cfg["reconstruction"]["tracking"]["two_way_ckf"],  # default: True,
         outputDirRoot=cfg["reconstruction"]["outputdir"],
-        writeTrackSummary=False,
+        writeTrackSummary=True,
         logLevel=acts.logging.INFO,
     )
 
