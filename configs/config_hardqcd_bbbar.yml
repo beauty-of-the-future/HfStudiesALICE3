@@ -1,5 +1,5 @@
 simulation:
-  n_events: 1000
+  n_events: 10000
   n_threads: 20
   rnd_seed: 42
   enable_material: true
@@ -12,7 +12,7 @@ simulation:
     enable: true
     config: pythia_cfg/pythia_hardqcd_bbbar.cfg
     config_pileup: pythia_cfg/pythia_softqcd.cfg
-    pileup: 1
+    pileup: 0
     search_hf_orig_up_to_quark: false
   gun:
     enable: false
