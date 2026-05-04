@@ -181,8 +181,8 @@ def buildALICE3Geometry(
                     positive=False, central=True, negative=False),
                 subVolumeName=LayerTriplet("TRK*"),
                 sensitiveNames=LayerTriplet(["TRKSensor*"]),
-                                sensitiveAxes=LayerTriplet(
-                    negative="XYZ", central="XYZ", positive="XYZ"),
+                sensitiveAxes=LayerTriplet("XYZ"),
+                # sensitiveAxes=LayerTriplet("ZXY"),
                 rRange=LayerTriplet(
                     central=(445 * u.mm, 1500 * u.mm),
                 ),

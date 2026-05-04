@@ -43,3 +43,6 @@ source ~/alice/ACTSO2/setup.sh
 ```
 examples of config files can be found in the `config` directory
 
+# geometry
+
+The current geometry in this repository is taken from [https://gitlab.cern.ch/alice3-trackers/wp1-simulationsandperformances/actso2/-/tree/master/geometries/geometry_2026_02_12_default_v3_cylindrical_barrel_tiled_disks](https://gitlab.cern.ch/alice3-trackers/wp1-simulationsandperformances/actso2/-/tree/master/geometries/geometry_2026_02_12_default_v3_cylindrical_barrel_tiled_disks)

@@ -261,13 +261,11 @@ def run_simulation(config_file):
     seeding_layers_opt = cfg["reconstruction"]["seeding"]["layers"]
     cfg_seeding_layers = None
     if seeding_layers_opt == "VD":
-        cfg_seeding_layers = ("geom/geoSelectionForSeedingInner_BOTH_Barrel_Endcaps_NEW_VOLUMES_Feb2025.json")
+        cfg_seeding_layers = ("geom/geoSelectionForSeeding_VD.json")
     elif seeding_layers_opt == "ML3":
         cfg_seeding_layers = ("geom/geoSelectionForSeeding_3firstML.json")
     elif seeding_layers_opt == "MLall":
         cfg_seeding_layers = ("geom/geoSelectionForSeeding_5ML.json")
-    elif seeding_layers_opt == "VDML":
-        cfg_seeding_layers = ("geom/geoSelectionForSeeding_IB_ML.json")
     else:
         print(f"ERROR: seeding layers option {seeding_layers_opt} not supported. Exit")
         sys.exit()
@@ -368,7 +366,7 @@ def run_simulation(config_file):
         ),
         twoWay=cfg["reconstruction"]["tracking"]["two_way_ckf"],  # default: True,
         outputDirRoot=cfg["reconstruction"]["outputdir"],
-        writeTrackSummary=False,
+        writeTrackSummary=True,
         logLevel=acts.logging.INFO,
     )
 
