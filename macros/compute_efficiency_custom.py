@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("--infile_rec", "-ir", metavar="text",
                         default="tracksummary_ambi.root", help="Input file for reconstructed tracks")
     parser.add_argument("--infile_gen", "-ig", metavar="text",
-                        default="tracksummary_ambi.root", help="Input file for reconstructed tracks")
+                        default="particles.root", help="Input file for generated particles")
     parser.add_argument("--outfile", "-o", metavar="text",
                         default="efficiency.root", help="Output file name")
     args = parser.parse_args()
