@@ -7,7 +7,7 @@ simulation:
   b_field: 2. # used only if b_filed_map empty
   b_field_map: "" #bfield/fieldMap_Alice3_with_absorber_2T_solenoid_5-9-23.txt
   geometry_file: geom/o2sim_geometry.gdml
-  digi_file: digits/digi-smearing-config_no_TOFs.json
+  digi_file: digits/digi-smearing-config_with_TOFs_noEndcapTOFs_noTimeInTOFs.json
   pythia:
     enable: true
     config: pythia_cfg/pythia_softqcd.cfg
@@ -29,7 +29,7 @@ simulation:
 reconstruction:
   seeding:
     algorithm: GridTriplet # options: Default, GridTriplet
-    layers: VD # options: VD, ML3, MLall, VDML
+    layers: VD # options: VD, ML3, MLall
     collision_region: 250 # mm
     max_seeds_per_spm: 2 # for Pb-Pb > 2
     sigma_scattering: 5 # How many sigmas of scattering to include in seeds
